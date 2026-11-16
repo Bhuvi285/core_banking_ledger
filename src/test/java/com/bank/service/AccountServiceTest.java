@@ -20,7 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@EnabledIfEnvironmentVariable(named = "DB_TEST_URL", matches = "jdbc:postgresql:.*_test($|\\?.*)")
+@EnabledIfEnvironmentVariable(named = "DB_TEST_URL",
+        matches = "^jdbc:postgresql://[^/?#]+/core_banking_ledger_test(?:\\?.*)?$")
 class AccountServiceTest {
     private TestDatabase.Services services;
 

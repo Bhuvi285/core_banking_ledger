@@ -15,6 +15,7 @@ import com.bank.util.IdGenerator;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -26,7 +27,7 @@ public final class TestDatabase {
     }
 
     public static Connection connection() throws SQLException {
-        return DriverManager.getConnection(required("DB_TEST_URL"), required("DB_TEST_USERNAME"),
+        return DriverManager.getConnection(testDatabaseUrl(), required("DB_TEST_USERNAME"),
                 required("DB_TEST_PASSWORD"));
     }
 
@@ -36,7 +37,7 @@ public final class TestDatabase {
 
     public static Services services(AccountNumberGenerator accountNumberGenerator) {
         ConnectionFactory connectionFactory = new ConnectionFactory(DatabaseConfig.fromValues(
-                required("DB_TEST_URL"), required("DB_TEST_USERNAME"), required("DB_TEST_PASSWORD")));
+                testDatabaseUrl(), required("DB_TEST_USERNAME"), required("DB_TEST_PASSWORD")));
         TransactionManager transactionManager = new TransactionManager(connectionFactory);
         AccountRepository accountRepository = new AccountRepository();
         TransactionRepository transactionRepository = new TransactionRepository();
@@ -53,6 +54,7 @@ public final class TestDatabase {
     }
 
     public static void reset() throws SQLException, IOException {
+        testDatabaseUrl();
         try (Connection connection = connection(); Statement statement = connection.createStatement()) {
             String schema;
             try (InputStream input = TestDatabase.class.getClassLoader().getResourceAsStream("schema.sql")) {
@@ -69,6 +71,32 @@ public final class TestDatabase {
             statement.execute("TRUNCATE TABLE audit_logs, ledger_entries, transactions, accounts "
                     + "RESTART IDENTITY CASCADE");
         }
+    }
+
+    public static void validateTestDatabaseUrl(String jdbcUrl) {
+        String message = "DB_TEST_URL must be a PostgreSQL JDBC URL whose database path is exactly "
+                + "/core_banking_ledger_test.";
+        if (jdbcUrl == null || !jdbcUrl.startsWith("jdbc:postgresql://")) {
+            throw new IllegalStateException(message);
+        }
+
+        try {
+            URI uri = URI.create(jdbcUrl.substring("jdbc:".length()));
+            if (!"postgresql".equals(uri.getScheme())
+                    || uri.getHost() == null
+                    || !"/core_banking_ledger_test".equals(uri.getRawPath())
+                    || uri.getRawFragment() != null) {
+                throw new IllegalStateException(message);
+            }
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalStateException(message, exception);
+        }
+    }
+
+    private static String testDatabaseUrl() {
+        String url = required("DB_TEST_URL");
+        validateTestDatabaseUrl(url);
+        return url;
     }
 
     private static String required(String name) {

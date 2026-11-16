@@ -11,7 +11,8 @@ import java.time.OffsetDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@EnabledIfEnvironmentVariable(named = "DB_TEST_URL", matches = "jdbc:postgresql:.*_test($|\\?.*)")
+@EnabledIfEnvironmentVariable(named = "DB_TEST_URL",
+        matches = "^jdbc:postgresql://[^/?#]+/core_banking_ledger_test(?:\\?.*)?$")
 class TransactionRepositoryTest {
     private TestDatabase.Services services;
 

@@ -9,7 +9,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@EnabledIfEnvironmentVariable(named = "DB_TEST_URL", matches = "jdbc:postgresql:.*_test($|\\?.*)")
+@EnabledIfEnvironmentVariable(named = "DB_TEST_URL",
+        matches = "^jdbc:postgresql://[^/?#]+/core_banking_ledger_test(?:\\?.*)?$")
 class AccountRepositoryTest {
     private TestDatabase.Services services;
 

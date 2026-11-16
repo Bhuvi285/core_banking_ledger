@@ -1,42 +1,72 @@
 # Core Banking Ledger & Transaction CLI
 
-A Java 17 console application for managing basic bank accounts and posting deposits, withdrawals, and transfers to a PostgreSQL-backed double-entry ledger. It uses JDBC directly so the database and transaction boundaries remain visible and easy to explain.
+A Java 17 console application for managing demo bank accounts and posting deposits, withdrawals, and transfers to a PostgreSQL-backed double-entry ledger. It uses JDBC directly so the database and transaction boundaries remain visible and easy to explain.
 
-## Objectives and features
+## Features
 
-- Demonstrate layered Java design, JDBC, PostgreSQL, exception handling, and JUnit 5.
 - Create and view savings/current accounts; freeze or reactivate accounts.
 - Deposit, withdraw, and transfer money using `BigDecimal`.
 - Store each transaction and its debit/credit ledger entries atomically.
-- Produce transaction history and a date-filtered account statement.
+- Produce transaction history and date-filtered account statements.
 - Write audit events without placing credentials or full account details in application logs.
 
-## Technology
+This project is an educational CLI demonstration only. Do not use real financial or customer data.
 
-Java 17, Maven, PostgreSQL 16+, PostgreSQL JDBC, dotenv-java, SLF4J/Logback, and JUnit 5. There is no Spring Boot, ORM, JPA, or MySQL dependency.
+## Technology and prerequisites
 
-## Architecture
+- Java 17 and Maven 3.8+ for local execution and tests.
+- Docker Engine with Docker Compose v2 for container deployment.
+- PostgreSQL 16+ for a local, non-containerized database.
 
-`controller` handles console interaction; `service` contains banking rules; `repository` contains prepared JDBC statements; `infrastructure` provides JDBC connections and transaction boundaries; `model`, `dto`, `enums`, and `exception` define application data and outcomes. See [docs/architecture.md](docs/architecture.md).
+There is no Spring Boot, ORM, JPA, or web application.
 
-## Structure
+## Docker deployment (Windows PowerShell)
 
-```text
-src/main/java/com/bank/       Application, controllers, services, repositories, models
-src/main/resources/            PostgreSQL schema, sample data, configuration, logging
-src/test/java/com/bank/        Unit and PostgreSQL test suites
-docs/                          Requirements, architecture, database, and testing notes
+From the project directory, create a local environment file from the placeholders:
+
+```powershell
+Copy-Item .env.example .env
 ```
 
-## Prerequisites
+Edit `.env` and replace `POSTGRES_PASSWORD` with a unique, long demo password. Do not commit `.env`; credentials are passed into containers at runtime and are not included in the Docker image.
 
-- JDK 17 (`java -version`)
-- Maven 3.8+ (`mvn -version`)
-- PostgreSQL 16+ and its command-line tools (`createdb`, `psql`)
+Build the Java image and start PostgreSQL:
 
-## PostgreSQL setup (Windows PowerShell)
+```powershell
+docker compose build
+docker compose up -d db
+docker compose ps
+```
 
-From the project directory, create the application database and load the schema and sample accounts:
+Wait for the database to report `healthy`, then run the CLI interactively in the current terminal:
+
+```powershell
+docker compose run --rm cli
+```
+
+The CLI reads from standard input and writes its menu to the attached terminal. It connects to PostgreSQL at `db:5432` on the private Compose network; the database port is not published to the host.
+
+### Database setup and persistence
+
+On the first initialization of this Compose project's named volume, the official PostgreSQL image runs the existing `src/main/resources/schema.sql` and `data.sql` scripts in order. The scripts are mounted read-only; the schema is not duplicated. PostgreSQL retains the database across container restarts and `docker compose down`. Initialization scripts do not run again when the volume already contains a database. Existing local PostgreSQL data is not used or modified by this Compose setup.
+
+Stop containers without deleting the database volume:
+
+```powershell
+docker compose down
+```
+
+To permanently remove this Compose project's containers and named volume (including its demo database and data), run:
+
+```powershell
+docker compose down --volumes
+```
+
+Volume removal is destructive and cannot be undone. Use it only when you intend to discard this project's demo data.
+
+## Local Maven execution
+
+Configure `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` in the project-root `.env` or process environment. For a local PostgreSQL server, create a database and initialize it once:
 
 ```powershell
 createdb -U postgres core_banking_ledger
@@ -44,38 +74,23 @@ psql -U postgres -d core_banking_ledger -f src\main\resources\schema.sql
 psql -U postgres -d core_banking_ledger -f src\main\resources\data.sql
 ```
 
-If PostgreSQL is not on `PATH`, run these commands from its `bin` directory or use the full paths to `createdb.exe` and `psql.exe`. The SQL scripts are safe to run again: tables/indexes use `IF NOT EXISTS` and sample account numbers are inserted only once.
-
-Copy `.env.example` to `.env` and set the local PostgreSQL password:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Edit `.env` with `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD`. The application loads this root-level file using dotenv-java; environment variables take precedence. `.env` is ignored by Git and must not contain credentials committed to the repository.
-
-## Build, test, and run
+Run the tests and package the application:
 
 ```powershell
 mvn clean test
 mvn package
-mvn exec:java -Dexec.mainClass="com.bank.Main"
 ```
 
-The Maven Exec plugin is configured so the third command runs the application with its dependencies. You can also run `com.bank.Main` from IntelliJ after reloading the Maven project.
-
-The always-on JUnit tests cover input validation. PostgreSQL service, repository, and integration tests run only when `DB_TEST_URL`, `DB_TEST_USERNAME`, and `DB_TEST_PASSWORD` are set, and only when `DB_TEST_URL` ends in `_test`. Create a dedicated test database before enabling them:
+Launch the CLI from the project directory with its runtime dependencies:
 
 ```powershell
-createdb -U postgres core_banking_ledger_test
-$env:DB_TEST_URL = "jdbc:postgresql://localhost:5432/core_banking_ledger_test"
-$env:DB_TEST_USERNAME = "postgres"
-$env:DB_TEST_PASSWORD = "your_test_password"
-mvn test
+mvn exec:java "-Dexec.mainClass=com.bank.Main"
 ```
 
-The gated tests reset all tables in this dedicated test database. Never point `DB_TEST_URL` at a production or other valuable database.
+## PostgreSQL integration tests
 
-## Future improvements
+PostgreSQL service and repository tests require `DB_TEST_URL`, `DB_TEST_USERNAME`, and `DB_TEST_PASSWORD`. They only accept a URL whose database path is exactly `/core_banking_ledger_test`; `TestDatabase.reset()` validates this before running schema or truncate statements. These tests reset that database, so use only a dedicated disposable test database and never valuable or production data.
 
-Add pagination for history, account-number collision retry, richer transaction status workflows, database migration tooling, and concurrency/load testing. Production deployments also need authentication, authorization, operational controls, and an externalized secret manager; this project is an educational CLI, not a production banking system.
+## Architecture
+
+`controller` handles console interaction; `service` contains banking rules; `repository` contains prepared JDBC statements; `infrastructure` provides JDBC connections and transaction boundaries; `model`, `dto`, `enums`, and `exception` define application data and outcomes. See [docs/architecture.md](docs/architecture.md).
