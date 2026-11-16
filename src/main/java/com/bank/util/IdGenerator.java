@@ -3,10 +3,10 @@ package com.bank.util;
 import java.security.SecureRandom;
 import java.util.UUID;
 
-public final class IdGenerator {
+public final class IdGenerator implements AccountNumberGenerator {
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private IdGenerator() {
+    public IdGenerator() {
     }
 
     public static String transactionReference() {
@@ -19,5 +19,10 @@ public final class IdGenerator {
             accountNumber.append(RANDOM.nextInt(10));
         }
         return accountNumber.toString();
+    }
+
+    @Override
+    public String generateAccountNumber() {
+        return accountNumber();
     }
 }

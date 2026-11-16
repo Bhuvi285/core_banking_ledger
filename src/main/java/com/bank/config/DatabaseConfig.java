@@ -4,6 +4,8 @@ import io.github.cdimascio.dotenv.Dotenv;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 
 public final class DatabaseConfig {
@@ -20,7 +22,10 @@ public final class DatabaseConfig {
     }
 
     public static DatabaseConfig load() {
-        Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+        Dotenv dotenv = Dotenv.configure()
+                .directory(findEnvironmentDirectory().toString())
+                .ignoreIfMissing()
+                .load();
         Properties properties = new Properties();
         try (InputStream input = DatabaseConfig.class.getClassLoader()
                 .getResourceAsStream("application.properties")) {
@@ -37,6 +42,16 @@ public final class DatabaseConfig {
                 configuredValue("DB_USERNAME", dotenv, properties),
                 configuredValue("DB_PASSWORD", dotenv, properties),
                 properties.getProperty("db.driver"));
+    }
+
+    private static Path findEnvironmentDirectory() {
+        Path directory = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
+        for (Path candidate = directory; candidate != null; candidate = candidate.getParent()) {
+            if (Files.isRegularFile(candidate.resolve(".env"))) {
+                return candidate;
+            }
+        }
+        return directory;
     }
 
     public static DatabaseConfig fromValues(String url, String username, String password) {

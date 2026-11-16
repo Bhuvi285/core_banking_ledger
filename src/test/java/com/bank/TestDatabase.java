@@ -10,6 +10,8 @@ import com.bank.repository.TransactionRepository;
 import com.bank.service.AccountService;
 import com.bank.service.StatementService;
 import com.bank.service.TransactionService;
+import com.bank.util.AccountNumberGenerator;
+import com.bank.util.IdGenerator;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,6 +31,10 @@ public final class TestDatabase {
     }
 
     public static Services services() {
+        return services(new IdGenerator());
+    }
+
+    public static Services services(AccountNumberGenerator accountNumberGenerator) {
         ConnectionFactory connectionFactory = new ConnectionFactory(DatabaseConfig.fromValues(
                 required("DB_TEST_URL"), required("DB_TEST_USERNAME"), required("DB_TEST_PASSWORD")));
         TransactionManager transactionManager = new TransactionManager(connectionFactory);
@@ -36,7 +42,8 @@ public final class TestDatabase {
         TransactionRepository transactionRepository = new TransactionRepository();
         LedgerRepository ledgerRepository = new LedgerRepository();
         AuditRepository auditRepository = new AuditRepository();
-        AccountService accountService = new AccountService(transactionManager, accountRepository, auditRepository);
+        AccountService accountService = new AccountService(transactionManager, accountRepository, auditRepository,
+                accountNumberGenerator);
         TransactionService transactionService = new TransactionService(transactionManager, accountRepository,
                 transactionRepository, ledgerRepository, auditRepository, accountService);
         StatementService statementService = new StatementService(transactionManager, accountRepository,

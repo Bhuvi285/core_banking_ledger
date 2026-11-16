@@ -6,14 +6,15 @@ import com.bank.exception.BankException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Objects;
 
 public class ConnectionFactory {
     private final DatabaseConfig config;
 
     public ConnectionFactory(DatabaseConfig config) {
-        this.config = config;
+        this.config = Objects.requireNonNull(config, "Database configuration is required.");
         try {
-            Class.forName(config.getDriver());
+            Class.forName(this.config.getDriver());
         } catch (ClassNotFoundException exception) {
             throw new BankException("PostgreSQL JDBC driver is unavailable.", exception);
         }

@@ -12,6 +12,7 @@ import com.bank.repository.TransactionRepository;
 import com.bank.service.AccountService;
 import com.bank.service.StatementService;
 import com.bank.service.TransactionService;
+import com.bank.util.IdGenerator;
 import com.bank.util.InputValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +41,8 @@ public class Main {
         TransactionRepository transactionRepository = new TransactionRepository();
         LedgerRepository ledgerRepository = new LedgerRepository();
         AuditRepository auditRepository = new AuditRepository();
-        AccountService accountService = new AccountService(transactionManager, accountRepository, auditRepository);
+        AccountService accountService = new AccountService(transactionManager, accountRepository, auditRepository,
+                new IdGenerator());
         TransactionService transactionService = new TransactionService(transactionManager, accountRepository,
                 transactionRepository, ledgerRepository, auditRepository, accountService);
         StatementService statementService = new StatementService(transactionManager, accountRepository,
