@@ -44,7 +44,7 @@ Wait for the database to report `healthy`, then run the CLI interactively in the
 docker compose run --rm cli
 ```
 
-The CLI reads from standard input and writes its menu to the attached terminal. It connects to PostgreSQL at `db:5432` on the private Compose network; the database port is not published to the host.
+The CLI reads from standard input and writes its menu to the attached terminal. Inside Docker, the Java CLI connects to PostgreSQL at `db:5432`. Windows applications and pgAdmin connect to that same PostgreSQL container and database at `localhost:5433`; Compose binds the published port to loopback only.
 
 ### Database setup and persistence
 
@@ -64,27 +64,46 @@ docker compose down --volumes
 
 Volume removal is destructive and cannot be undone. Use it only when you intend to discard this project's demo data.
 
-## Local Maven execution
+## Local Maven execution without Docker
 
-Configure `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` in the project-root `.env` or process environment. For a local PostgreSQL server, create a database and initialize it once:
+Prerequisites are Java 17, Maven 3.8+, and a running PostgreSQL 16 server. The required database is `core_banking_ledger`. To use the PostgreSQL container described above, start it first; its first initialization loads the existing schema and demo data scripts:
 
 ```powershell
-createdb -U postgres core_banking_ledger
-psql -U postgres -d core_banking_ledger -f src\main\resources\schema.sql
-psql -U postgres -d core_banking_ledger -f src\main\resources\data.sql
+docker compose up -d db
 ```
 
-Run the tests and package the application:
+The container exposes PostgreSQL at `localhost:5433` on Windows. The same database can be used from the Java application in either mode: the local Maven process connects to `localhost:5433`, while the Java container connects to `db:5432`. Do not create a second database for local execution.
+
+If using a separately installed local PostgreSQL server instead, create `core_banking_ledger` and initialize it with the existing scripts (adjust the port if your PostgreSQL server does not listen on `5433`):
+
+```powershell
+createdb -U postgres -p 5433 core_banking_ledger
+psql -U postgres -p 5433 -d core_banking_ledger -f src\main\resources\schema.sql
+psql -U postgres -p 5433 -d core_banking_ledger -f src\main\resources\data.sql
+```
+
+From PowerShell, configure the JDBC URL and credentials for the local Maven process. The example username `ledger_app` must already exist as a PostgreSQL role on the server; before using it, create/configure that role and grant it appropriate permissions on `core_banking_ledger`, including access to the schema, tables, and sequences the application uses.
+
+These credentials must match the PostgreSQL server in `DB_URL`. For a separately installed local PostgreSQL server, use the role and password configured on that server. When connecting to the Compose database at `localhost:5433`, use the `POSTGRES_USER` and `POSTGRES_PASSWORD` values from `.env` instead; Compose credentials are distinct from credentials on a separately installed server.
+
+```powershell
+$env:DB_URL = "jdbc:postgresql://localhost:5433/core_banking_ledger"
+$env:DB_USERNAME = "ledger_app"
+$env:DB_PASSWORD = Read-Host "Enter the PostgreSQL password"
+mvn exec:java "-Dexec.mainClass=com.bank.Main"
+```
+
+Remove the temporary process environment variables when finished:
+
+```powershell
+Remove-Item Env:DB_URL, Env:DB_USERNAME, Env:DB_PASSWORD
+```
+
+Build and run the test suite as needed:
 
 ```powershell
 mvn clean test
 mvn package
-```
-
-Launch the CLI from the project directory with its runtime dependencies:
-
-```powershell
-mvn exec:java "-Dexec.mainClass=com.bank.Main"
 ```
 
 ## PostgreSQL integration tests

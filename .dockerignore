@@ -1,0 +1,17 @@
+.git
+.idea
+.env
+.env.*
+!.env.example
+secrets
+target
+logs
+*.log
+*.tmp
+*.temp
+*.secret
+*.credentials
+*.pem
+*.key
+*.p12
+*.jks

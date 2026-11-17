@@ -36,13 +36,17 @@ public final class TestDatabase {
     }
 
     public static Services services(AccountNumberGenerator accountNumberGenerator) {
+        return services(accountNumberGenerator, new AccountRepository(), new LedgerRepository(), new AuditRepository());
+    }
+
+    public static Services services(AccountNumberGenerator accountNumberGenerator,
+                                    AccountRepository accountRepository,
+                                    LedgerRepository ledgerRepository,
+                                    AuditRepository auditRepository) {
         ConnectionFactory connectionFactory = new ConnectionFactory(DatabaseConfig.fromValues(
                 testDatabaseUrl(), required("DB_TEST_USERNAME"), required("DB_TEST_PASSWORD")));
         TransactionManager transactionManager = new TransactionManager(connectionFactory);
-        AccountRepository accountRepository = new AccountRepository();
         TransactionRepository transactionRepository = new TransactionRepository();
-        LedgerRepository ledgerRepository = new LedgerRepository();
-        AuditRepository auditRepository = new AuditRepository();
         AccountService accountService = new AccountService(transactionManager, accountRepository, auditRepository,
                 accountNumberGenerator);
         TransactionService transactionService = new TransactionService(transactionManager, accountRepository,
