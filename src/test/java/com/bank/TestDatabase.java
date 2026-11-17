@@ -2,6 +2,7 @@ package com.bank;
 
 import com.bank.config.DatabaseConfig;
 import com.bank.infrastructure.ConnectionFactory;
+import com.bank.infrastructure.PostgresTimeZone;
 import com.bank.infrastructure.TransactionManager;
 import com.bank.repository.AccountRepository;
 import com.bank.repository.AuditRepository;
@@ -27,6 +28,7 @@ public final class TestDatabase {
     }
 
     public static Connection connection() throws SQLException {
+        PostgresTimeZone.normalizeLegacyAlias();
         return DriverManager.getConnection(testDatabaseUrl(), required("DB_TEST_USERNAME"),
                 required("DB_TEST_PASSWORD"));
     }

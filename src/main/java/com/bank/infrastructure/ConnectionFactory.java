@@ -22,10 +22,13 @@ public class ConnectionFactory {
 
     public Connection getConnection() {
         try {
+            PostgresTimeZone.normalizeLegacyAlias();
             return DriverManager.getConnection(config.getUrl(), config.getUsername(), config.getPassword());
         } catch (SQLException exception) {
-            throw new BankException("Unable to connect to the banking database. Verify the database configuration.",
-                    exception);
+            String sqlState = exception.getSQLState();
+            String detail = sqlState == null ? exception.getMessage()
+                    : "SQLState " + sqlState + ": " + exception.getMessage();
+            throw new BankException("Unable to connect to the banking database: " + detail, exception);
         }
     }
 }
