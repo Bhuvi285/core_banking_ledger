@@ -3,6 +3,7 @@ package com.bank.service;
 import com.bank.TestDatabase;
 import com.bank.dto.TransferRequest;
 import com.bank.enums.AccountType;
+import com.bank.exception.AccountNotFoundException;
 import com.bank.exception.BankException;
 import com.bank.exception.InsufficientFundsException;
 import com.bank.model.LedgerEntry;
@@ -87,6 +88,27 @@ class TransactionServiceTest {
                 services.accountService().getAccount(source.getAccountNumber()).getBalance());
         assertEquals(new BigDecimal("40.00"),
                 services.accountService().getAccount(destination.getAccountNumber()).getBalance());
+    }
+
+    @Test
+    void transferRejectsSameUnknownInactiveAndInvalidAccountsOrAmounts() {
+        var source = services.accountService().createAccount("Transfer Validation Source", AccountType.SAVINGS);
+        var destination = services.accountService().createAccount("Transfer Validation Destination",
+                AccountType.CURRENT);
+        var service = services.transactionService();
+
+        assertThrows(BankException.class, () -> service.transfer(new TransferRequest(source.getAccountNumber(),
+                source.getAccountNumber(), new BigDecimal("1.00"), null)));
+        assertThrows(AccountNotFoundException.class, () -> service.transfer(new TransferRequest(
+                source.getAccountNumber(), "999999999999", new BigDecimal("1.00"), null)));
+        assertThrows(IllegalArgumentException.class, () -> service.transfer(new TransferRequest(
+                source.getAccountNumber(), destination.getAccountNumber(), BigDecimal.ZERO, null)));
+        assertThrows(IllegalArgumentException.class, () -> service.transfer(new TransferRequest(
+                "123", destination.getAccountNumber(), new BigDecimal("1.00"), null)));
+
+        services.accountService().freezeAccount(source.getAccountNumber());
+        assertThrows(BankException.class, () -> service.transfer(new TransferRequest(source.getAccountNumber(),
+                destination.getAccountNumber(), new BigDecimal("1.00"), null)));
     }
 
     @Test

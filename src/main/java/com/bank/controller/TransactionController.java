@@ -1,10 +1,13 @@
 package com.bank.controller;
 
 import com.bank.dto.TransferRequest;
+import com.bank.enums.AccountStatus;
+import com.bank.model.Account;
 import com.bank.model.Transaction;
 import com.bank.service.AccountService;
 import com.bank.service.StatementService;
 import com.bank.service.TransactionService;
+import com.bank.util.InputValidator;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -28,15 +31,54 @@ public class TransactionController {
     }
 
     public void transfer() {
+        System.out.println("""
+                ==============================================
+                                MONEY TRANSFER
+                ==============================================""");
+        System.out.println("AVAILABLE ACCOUNTS");
+        List<Account> eligibleAccounts = accountController.displayAccountDirectory(true);
+        if (eligibleAccounts.size() < 2) {
+            System.out.println("At least two ACTIVE accounts are required to make a transfer.");
+            return;
+        }
+
         System.out.print("Source account number: ");
         String source = scanner.nextLine().trim();
+        if (!isAvailableAccount(source, eligibleAccounts)) {
+            System.out.println("Source account is not an available ACTIVE account.");
+            return;
+        }
         System.out.print("Destination account number: ");
         String destination = scanner.nextLine().trim();
+        if (!isAvailableAccount(destination, eligibleAccounts)) {
+            System.out.println("Destination account is not an available ACTIVE account.");
+            return;
+        }
+        if (source.equals(destination)) {
+            System.out.println("Source and destination accounts must be different.");
+            return;
+        }
         System.out.print("Amount: ");
-        BigDecimal amount = new BigDecimal(scanner.nextLine().trim());
+        BigDecimal amount = InputValidator.requirePositiveAmount(new BigDecimal(scanner.nextLine().trim()));
         System.out.print("Description (optional): ");
-        System.out.println(transactionService.transfer(
-                new TransferRequest(source, destination, amount, scanner.nextLine())).getMessage());
+        String description = scanner.nextLine();
+        System.out.print("Confirm Transfer? (Y/N): ");
+        if (!scanner.nextLine().trim().equalsIgnoreCase("Y")) {
+            System.out.println("Transfer cancelled.");
+            return;
+        }
+        System.out.println("SUCCESS: " + transactionService.transfer(
+                new TransferRequest(source, destination, amount, description)).getMessage());
+    }
+
+    private static boolean isAvailableAccount(String accountNumber, List<Account> accounts) {
+        try {
+            String validNumber = InputValidator.requireAccountNumber(accountNumber);
+            return accounts.stream().anyMatch(account -> account.getAccountStatus() == AccountStatus.ACTIVE
+                    && account.getAccountNumber().equals(validNumber));
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
     }
 
     public void viewHistory() {

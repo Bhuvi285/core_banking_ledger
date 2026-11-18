@@ -65,32 +65,34 @@ public class Main {
                     =============================================
                     1. Create Account
                     2. View Account Details
-                    3. Deposit Money
-                    4. Withdraw Money
-                    5. Transfer Money
-                    6. View Transaction History
-                    7. Generate Account Statement
-                    8. Freeze Account
-                    9. Reactivate Account
-                    10. Exit
+                    3. View All Accounts
+                    4. Deposit Money
+                    5. Withdraw Money
+                    6. Transfer Money
+                    7. View Transaction History
+                    8. Generate Account Statement
+                    9. Freeze Account
+                    10. Reactivate Account
+                    11. Exit
                     """);
             System.out.print("Enter your choice: ");
             if (!scanner.hasNextLine()) {
                 return;
             }
             try {
-                int choice = InputValidator.requireMenuChoice(scanner.nextLine().trim(), 1, 10);
+                int choice = InputValidator.requireMenuChoice(scanner.nextLine().trim(), 1, 11);
                 switch (choice) {
                     case 1 -> accounts.createAccount();
                     case 2 -> accounts.viewAccount();
-                    case 3 -> accounts.deposit();
-                    case 4 -> accounts.withdraw();
-                    case 5 -> transactions.transfer();
-                    case 6 -> transactions.viewHistory();
-                    case 7 -> transactions.generateStatement();
-                    case 8 -> transactions.freezeAccount();
-                    case 9 -> transactions.reactivateAccount();
-                    case 10 -> running = false;
+                    case 3 -> accounts.viewAllAccounts();
+                    case 4 -> accounts.deposit();
+                    case 5 -> accounts.withdraw();
+                    case 6 -> transactions.transfer();
+                    case 7 -> transactions.viewHistory();
+                    case 8 -> transactions.generateStatement();
+                    case 9 -> transactions.freezeAccount();
+                    case 10 -> transactions.reactivateAccount();
+                    case 11 -> running = false;
                     default -> throw new IllegalStateException("Validated menu choice was out of range.");
                 }
             } catch (RuntimeException exception) {

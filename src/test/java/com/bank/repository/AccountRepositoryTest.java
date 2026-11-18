@@ -8,6 +8,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EnabledIfEnvironmentVariable(named = "DB_TEST_URL",
         matches = "^jdbc:postgresql://[^/?#]+/core_banking_ledger_test(?:\\?.*)?$")
@@ -26,6 +27,11 @@ class AccountRepositoryTest {
         assertEquals(created.getId(),
                 services.accountService().getAccount(created.getAccountNumber()).getId());
         assertEquals(1, services.accountService().getAllAccounts().size());
+    }
+
+    @Test
+    void listsNoAccountsWhenTheDirectoryIsEmpty() {
+        assertTrue(services.accountService().getAllAccounts().isEmpty());
     }
 
     @Test
